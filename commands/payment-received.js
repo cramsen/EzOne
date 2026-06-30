@@ -1,10 +1,10 @@
-import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
+import { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } from 'discord.js';
 
 export default {
     data: new SlashCommandBuilder()
         .setName('payment-received')
-        .setDescription('Sends an embed confirming a customer payment.'),
-        
+        .setDescription('Sends an embed confirming a customer payment.')
+        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
     async execute(interaction) {
         // Build the embed message
         const paymentEmbed = new EmbedBuilder()

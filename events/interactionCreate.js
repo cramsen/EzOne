@@ -2,12 +2,11 @@ import { Events } from 'discord.js';
 
 export default {
     name: Events.InteractionCreate,
-    once: false,
     async execute(interaction) {
-        // If it's not a slash command, ignore it
+        
+        // Only handle slash commands
         if (!interaction.isChatInputCommand()) return;
 
-        // Grab the command from the bot's memory
         const command = interaction.client.commands.get(interaction.commandName);
         if (!command) return;
 
@@ -15,11 +14,10 @@ export default {
             await command.execute(interaction);
         } catch (error) {
             console.error(error);
-            const replyObj = { content: 'There was an error executing this command!', ephemeral: true };
             if (interaction.replied || interaction.deferred) {
-                await interaction.followUp(replyObj);
+                await interaction.followUp({ content: 'There was an error while executing this command!', ephemeral: true });
             } else {
-                await interaction.reply(replyObj);
+                await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
             }
         }
     },

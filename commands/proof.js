@@ -1,9 +1,11 @@
-import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
+import { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } from 'discord.js';
 
 export default {
     data: new SlashCommandBuilder()
         .setName('proof')
         .setDescription('Upload payment and trade proofs for a transaction')
+        // 👇 This single line locks the command to Admins only and hides it from everyone else
+        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator) 
         .addUserOption(option => 
             option.setName('buyer')
                 .setDescription('The person who bought the item')
@@ -12,7 +14,6 @@ export default {
             option.setName('item')
                 .setDescription('What item or service was sold?')
                 .setRequired(true))
-        // New option for the Vouch ID
         .addIntegerOption(option => 
             option.setName('vouch_id')
                 .setDescription('The Vouch # this proof belongs to')
@@ -29,7 +30,7 @@ export default {
     async execute(interaction) {
         const buyer = interaction.options.getUser('buyer');
         const item = interaction.options.getString('item');
-        const vouchId = interaction.options.getInteger('vouch_id'); // Grabbing the vouch number
+        const vouchId = interaction.options.getInteger('vouch_id'); 
         const paymentReceipt = interaction.options.getAttachment('payment_receipt');
         const tradeProof = interaction.options.getAttachment('trade_proof');
         const seller = interaction.user; 
@@ -37,7 +38,7 @@ export default {
         // 1. Build the Payment Receipt Embed
         const receiptEmbed = new EmbedBuilder()
             .setColor(0x00FF00) 
-            .setTitle(`💰 Payment Receipt (Vouch #${vouchId})`) // Added Vouch ID to the title
+            .setTitle(`💰 Payment Receipt (Vouch #${vouchId})`) 
             .setDescription(`**Seller:** ${seller}\n**Buyer:** ${buyer}\n**Item:** ${item}`)
             .setImage(paymentReceipt.url)
             .setFooter({ text: `Linked to Vouch ID: ${vouchId}` })
@@ -46,7 +47,7 @@ export default {
         // 2. Build the Trade Proof Embed
         const tradeEmbed = new EmbedBuilder()
             .setColor(0x0099FF) 
-            .setTitle(`🤝 Trade Proof (Vouch #${vouchId})`) // Added Vouch ID to the title
+            .setTitle(`🤝 Trade Proof (Vouch #${vouchId})`) 
             .setDescription(`Delivery confirmation for ${item}`)
             .setImage(tradeProof.url)
             .setFooter({ text: `Linked to Vouch ID: ${vouchId}` })
