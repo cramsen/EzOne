@@ -1,6 +1,6 @@
 import { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } from 'discord.js';
 import fs from 'fs';
-import * as transcript from 'discord-html-transcripts'; // Added for transcript support[cite: 16]
+import * as transcript from 'discord-html-transcripts';
 
 const path = './vouches.json';
 
@@ -10,7 +10,7 @@ export default {
         .setDescription('Finalizes the ticket, logs proofs, vouches, saves transcript, and archives.')
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
         .addUserOption(option => option.setName('buyer').setDescription('The buyer').setRequired(true))
-        .addStringOption(option => option.setName('item').setDescription('Item sold').setRequired(true))
+        .addStringOption(option => option.setName('item_or_service').setDescription('Item or service sold').setRequired(true)) // Updated name
         .addStringOption(option => option.setName('game').setDescription('Game name').setRequired(true))
         .addAttachmentOption(option => option.setName('payment_receipt').setDescription('Payment proof').setRequired(true))
         .addAttachmentOption(option => option.setName('trade_proof').setDescription('Trade proof').setRequired(true)),
@@ -20,7 +20,7 @@ export default {
 
         const buyer = interaction.options.getUser('buyer');
         const seller = interaction.user;
-        const item = interaction.options.getString('item');
+        const itemOrService = interaction.options.getString('item_or_service'); // Updated retrieval
         const game = interaction.options.getString('game');
         const paymentReceipt = interaction.options.getAttachment('payment_receipt');
         const tradeProof = interaction.options.getAttachment('trade_proof');
@@ -31,7 +31,7 @@ export default {
         vouches[seller.id] = (vouches[seller.id] || 0) + 1;
         fs.writeFileSync(path, JSON.stringify(vouches, null, 4));
 
-        // 2. Generate and save Transcript[cite: 16]
+        // 2. Generate and save Transcript
         const attachment = await transcript.createTranscript(interaction.channel);
         const transcriptChannel = interaction.guild.channels.cache.get('1465599081442447392');
         if (transcriptChannel) {
@@ -44,12 +44,12 @@ export default {
         // 3. Send Proofs to Logs[cite: 2]
         const logChannel = interaction.guild.channels.cache.get('1465599081442447392');
         if (logChannel) {
-            const receiptEmbed = new EmbedBuilder().setColor(0x00FF00).setTitle('💰 Payment Receipt').setDescription(`**Seller:** ${seller}\n**Buyer:** ${buyer}\n**Item:** ${item}\n**Game:** ${game}`).setImage(paymentReceipt.url);
-            const tradeEmbed = new EmbedBuilder().setColor(0x0099FF).setTitle('🤝 Trade Proof').setDescription(`Delivery confirmation for ${item}`).setImage(tradeProof.url);
+            const receiptEmbed = new EmbedBuilder().setColor(0x00FF00).setTitle('💰 Payment Receipt').setDescription(`**Seller:** ${seller}\n**Buyer:** ${buyer}\n**Item/Service:** ${itemOrService}\n**Game:** ${game}`).setImage(paymentReceipt.url);
+            const tradeEmbed = new EmbedBuilder().setColor(0x0099FF).setTitle('🤝 Trade Proof').setDescription(`Delivery confirmation for ${itemOrService}`).setImage(tradeProof.url);
             await logChannel.send({ embeds: [receiptEmbed, tradeEmbed] });
         }
 
-        // 4. Archive/Rename/Lock Channel
+        // 4. Archive/Rename/Lock Channel[cite: 15]
         const newName = interaction.channel.name.replace('purchase-', 'closed-');
         await interaction.channel.edit({
             name: newName,
