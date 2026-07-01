@@ -3,29 +3,23 @@ import fs from 'fs';
 
 const path = './vouches.json';
 const channelId = '1465598901384908953'; // Your vouch/log channel ID
+const myId = '433091337332457472'; // Your personal Discord ID
 
 export default {
     data: new SlashCommandBuilder()
         .setName('vouch')
-        .setDescription('Leave a vouch for a seller')
-        .addUserOption(option => 
-            option.setName('seller')
-                .setDescription('The user you are vouching for')
-                .setRequired(true))
+        .setDescription('Leave a vouch for the Eclipse Zone owner')
         .addStringOption(option => 
             option.setName('game')
                 .setDescription('What game is this for?')
                 .setRequired(true))
-        // Changed from 'item' to 'item_or_service' so it shows up in the command menu
         .addStringOption(option => 
             option.setName('item_or_service')
                 .setDescription('What did you buy?')
                 .setRequired(true)),
                 
     async execute(interaction) {
-        const seller = interaction.options.getUser('seller');
         const game = interaction.options.getString('game'); 
-        // Make sure to grab the new name here too
         const itemOrService = interaction.options.getString('item_or_service');
         const buyer = interaction.user;
 
@@ -35,11 +29,11 @@ export default {
             vouches = JSON.parse(fs.readFileSync(path, 'utf8'));
         }
 
-        // 2. Add the new vouch
-        if (!vouches[seller.id]) {
-            vouches[seller.id] = 0;
+        // 2. Add the new vouch directly to your ID
+        if (!vouches[myId]) {
+            vouches[myId] = 0;
         }
-        vouches[seller.id] += 1;
+        vouches[myId] += 1;
 
         // 3. Calculate Server Total FIRST so we can use it as the Vouch Number
         let grandTotal = 0;
@@ -56,10 +50,10 @@ export default {
             .setTitle(`⭐ New Vouch! (#${grandTotal})`) 
             .setDescription(`+ 1 vouch from ${buyer}`)
             .addFields(
-                { name: 'Seller', value: `${seller}`, inline: true },
-                { name: 'Total Vouches', value: `${vouches[seller.id]}`, inline: true },
+                // Hardcoded to ping your ID
+                { name: 'Seller', value: `<@${myId}>`, inline: true },
+                { name: 'Total Vouches', value: `${vouches[myId]}`, inline: true },
                 { name: 'Game', value: `${game}`, inline: true },
-                // Cleanly formatted for the embed display
                 { name: 'Item/Service', value: `${itemOrService}`, inline: true }
             )
             .setFooter({ text: `Eclipse Zone Vouch ID: ${grandTotal}` })
@@ -72,7 +66,7 @@ export default {
             await vouchChannel.send({ embeds: [vouchEmbed] });
             
             await interaction.reply({ 
-                content: `✅ Successfully vouched for ${seller}! Your vouch was logged in ${vouchChannel}.`, 
+                content: `✅ Successfully vouched for <@${myId}>! Your vouch was logged in ${vouchChannel}.`, 
                 ephemeral: true 
             });
         } else {

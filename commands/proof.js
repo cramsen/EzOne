@@ -1,10 +1,11 @@
 import { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } from 'discord.js';
 
+const PROOFS_CHANNEL_ID = '1465598921119371387'; // Locked to your #proofs channel
+
 export default {
     data: new SlashCommandBuilder()
         .setName('proof')
         .setDescription('Upload payment and trade proofs for a transaction')
-        // 👇 This single line locks the command to Admins only and hides it from everyone else
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator) 
         .addUserOption(option => 
             option.setName('buyer')
@@ -28,6 +29,9 @@ export default {
                 .setRequired(true)),
                 
     async execute(interaction) {
+        // Defer the reply so it doesn't time out while processing images
+        await interaction.deferReply({ ephemeral: true });
+
         const buyer = interaction.options.getUser('buyer');
         const item = interaction.options.getString('item');
         const vouchId = interaction.options.getInteger('vouch_id'); 
@@ -53,7 +57,18 @@ export default {
             .setFooter({ text: `Linked to Vouch ID: ${vouchId}` })
             .setTimestamp();
 
-        // 3. Send both embeds
-        await interaction.reply({ embeds: [receiptEmbed, tradeEmbed] });
+        // 3. Find the designated proofs channel
+        const proofsChannel = interaction.client.channels.cache.get(PROOFS_CHANNEL_ID);
+
+        if (proofsChannel) {
+            // Send embeds to the specific channel
+            await proofsChannel.send({ embeds: [receiptEmbed, tradeEmbed] });
+            
+            // Send a silent confirmation back to the admin who ran the command
+            await interaction.editReply(`✅ Proofs successfully logged to ${proofsChannel}!`);
+        } else {
+            // Error handling if the ID is wrong or missing
+            await interaction.editReply('⚠️ Could not find the proofs channel! Please double-check the ID at the top of the code.');
+        }
     },
 };
