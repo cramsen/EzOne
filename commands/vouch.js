@@ -1,9 +1,8 @@
 import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
-import fs from 'fs';
+import { db } from '../firebase.js';
 
-const path = './vouches.json';
-const channelId = '1465598901384908953'; // Your vouch/log channel ID
-const myId = '433091337332457472'; // Your personal Discord ID
+const channelId = '1465598901384908953'; 
+const myId = '433091337332457472'; 
 
 export default {
     data: new SlashCommandBuilder()
@@ -19,70 +18,61 @@ export default {
                 .setRequired(true)),
                 
     async execute(interaction) {
+        await interaction.deferReply({ ephemeral: true });
+
         const game = interaction.options.getString('game'); 
         const itemOrService = interaction.options.getString('item_or_service');
         const buyer = interaction.user;
 
-        // 1. Read the current vouches
-        let vouches = {};
-        if (fs.existsSync(path)) {
-            vouches = JSON.parse(fs.readFileSync(path, 'utf8'));
-        }
+        // 1. Reference ONLY your personal path
+        const sellerRef = db.ref(`vouches/${myId}`);
 
-        // 2. Add the new vouch directly to your ID
-        if (!vouches[myId]) {
-            vouches[myId] = 0;
-        }
-        vouches[myId] += 1;
-
-        // 3. Calculate Server Total FIRST so we can use it as the Vouch Number
-        let grandTotal = 0;
-        for (const key in vouches) {
-            grandTotal += vouches[key];
-        }
-
-        // 4. Save to file
-        fs.writeFileSync(path, JSON.stringify(vouches, null, 4));
-
-        // 5. Build the embed and add the Grand Total as the Vouch Number
-        const vouchEmbed = new EmbedBuilder()
-            .setColor(0x00FF00) 
-            .setTitle(`⭐ New Vouch! (#${grandTotal})`) 
-            .setDescription(`+ 1 vouch from ${buyer}`)
-            .addFields(
-                // Hardcoded to ping your ID
-                { name: 'Seller', value: `<@${myId}>`, inline: true },
-                { name: 'Total Vouches', value: `${vouches[myId]}`, inline: true },
-                { name: 'Game', value: `${game}`, inline: true },
-                { name: 'Item/Service', value: `${itemOrService}`, inline: true }
-            )
-            .setFooter({ text: `Eclipse Zone Vouch ID: ${grandTotal}` })
-            .setTimestamp();
-
-        // 6. Find the vouch channel and send the embed there
-        const vouchChannel = interaction.client.channels.cache.get(channelId);
-        
-        if (vouchChannel) {
-            await vouchChannel.send({ embeds: [vouchEmbed] });
+        try {
+            // 2. Add 1 to your total
+            const sellerSnapshot = await sellerRef.transaction((currentValue) => {
+                return (currentValue || 0) + 1;
+            });
             
-            await interaction.reply({ 
-                content: `✅ Successfully vouched for <@${myId}>! Your vouch was logged in ${vouchChannel}.`, 
-                ephemeral: true 
-            });
-        } else {
-            await interaction.reply({ 
-                content: `⚠️ Vouch counted, but I couldn't find the vouch channel to log the embed!`, 
-                ephemeral: true 
-            });
-        }
+            // This one number is now used for both your stats and the Vouch ID!
+            const newTotal = sellerSnapshot.snapshot.val();
 
-        // 7. Update Channel Name (10-minute rate limit applies)
-        if (vouchChannel) {
-            try {
-                await vouchChannel.setName(`⭐・vouches：${grandTotal}`);
-            } catch (error) {
-                console.error("Rate limit hit: Could not update channel name this time.");
+            // 3. Build the embed
+            const vouchEmbed = new EmbedBuilder()
+                .setColor(0x00FF00) 
+                .setTitle(`⭐ New Vouch! (#${newTotal})`) 
+                .setDescription(`+ 1 vouch from ${buyer}`)
+                .addFields(
+                    { name: 'Seller', value: `<@${myId}>`, inline: true },
+                    { name: 'Total Vouches', value: `${newTotal}`, inline: true },
+                    { name: 'Game', value: `${game}`, inline: true },
+                    { name: 'Item/Service', value: `${itemOrService}`, inline: true }
+                )
+                .setFooter({ text: `Eclipse Zone Vouch ID: ${newTotal}` })
+                .setTimestamp();
+
+            // 4. Send the embed
+            const vouchChannel = interaction.client.channels.cache.get(channelId);
+            
+            if (vouchChannel) {
+                await vouchChannel.send({ embeds: [vouchEmbed] });
+                await interaction.editReply({ 
+                    content: `✅ Successfully vouched for <@${myId}>! Your vouch was logged in ${vouchChannel}.`
+                });
+
+                try {
+                    await vouchChannel.setName(`⭐・vouches：${newTotal}`);
+                } catch (error) {
+                    console.error("Rate limit hit: Could not update channel name this time.");
+                }
+            } else {
+                await interaction.editReply({ 
+                    content: `⚠️ Vouch counted in database, but couldn't find the vouch channel!`
+                });
             }
+
+        } catch (error) {
+            console.error("Firebase Transaction Error:", error);
+            await interaction.editReply({ content: "❌ Database error while saving your vouch." });
         }
     },
 };

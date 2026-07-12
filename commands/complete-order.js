@@ -1,10 +1,9 @@
 import { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } from 'discord.js';
-import fs from 'fs';
+import { db } from '../firebase.js';
 
-const path = './vouches.json';
-const PROOFS_CHANNEL_ID = '1465598921119371387'; // #proofs
-const TRANSCRIPTS_CHANNEL_ID = '1465599081442447392'; // #transcripts
-const VOUCH_CHANNEL_ID = '1465598901384908953'; // #vouches
+const PROOFS_CHANNEL_ID = '1465598921119371387'; 
+const TRANSCRIPTS_CHANNEL_ID = '1465599081442447392'; 
+const VOUCH_CHANNEL_ID = '1465598901384908953'; 
 
 export default {
     data: new SlashCommandBuilder()
@@ -27,92 +26,92 @@ export default {
         const paymentReceipt = interaction.options.getAttachment('payment_receipt');
         const tradeProof = interaction.options.getAttachment('trade_proof');
 
-        // 1. Update the Database and Calculate the ID
-        let vouches = {};
-        if (fs.existsSync(path)) vouches = JSON.parse(fs.readFileSync(path, 'utf8'));
-        
-        vouches[seller.id] = (vouches[seller.id] || 0) + 1;
-        
-        let grandTotal = 0;
-        for (const key in vouches) {
-            grandTotal += vouches[key];
-        }
-        
-        fs.writeFileSync(path, JSON.stringify(vouches, null, 4));
+        // 1. Reference ONLY the seller's path in Firebase
+        const sellerRef = db.ref(`vouches/${seller.id}`);
 
-        // 2. Automatically Create and Send the Vouch Embed
-        const vouchChannel = interaction.guild.channels.cache.get(VOUCH_CHANNEL_ID);
-        if (vouchChannel) {
-            const vouchEmbed = new EmbedBuilder()
-                .setColor(0x00FF00) 
-                .setTitle(`⭐ New Vouch! (#${grandTotal})`) 
-                .setDescription(`+ 1 vouch from ${buyer}`)
-                .addFields(
-                    { name: 'Seller', value: `${seller}`, inline: true },
-                    { name: 'Total Vouches', value: `${vouches[seller.id]}`, inline: true },
-                    { name: 'Game', value: `${game}`, inline: true },
-                    { name: 'Item/Service', value: `${itemOrService}`, inline: true }
-                )
-                .setFooter({ text: `Eclipse Zone Vouch ID: ${grandTotal}` })
-                .setTimestamp();
-            
-            await vouchChannel.send({ embeds: [vouchEmbed] });
-            
-            // Try to update the channel name
-            vouchChannel.setName(`⭐・vouches：${grandTotal}`).catch(() => {
-                console.log("Channel name rate limit hit.");
+        try {
+            // 2. Add 1 to the seller's count atomically
+            const sellerSnapshot = await sellerRef.transaction((currentValue) => {
+                return (currentValue || 0) + 1;
             });
-        }
+            const newTotal = sellerSnapshot.snapshot.val();
 
-        // 3. Send Proofs to Logs (Tied to the New Vouch ID!)
-        const proofsChannel = interaction.guild.channels.cache.get(PROOFS_CHANNEL_ID);
-        if (proofsChannel) {
-            const receiptEmbed = new EmbedBuilder()
-                .setColor(0x00FF00)
-                .setTitle(`💰 Payment Receipt (Vouch #${grandTotal})`) 
-                .setDescription(`**Seller:** ${seller}\n**Buyer:** ${buyer}\n**Item/Service:** ${itemOrService}\n**Game:** ${game}`)
-                .setImage(paymentReceipt.url)
-                .setFooter({ text: `Linked to Vouch ID: ${grandTotal}` })
-                .setTimestamp();
+            // 3. Automatically Create and Send the Vouch Embed
+            const vouchChannel = interaction.guild.channels.cache.get(VOUCH_CHANNEL_ID);
+            if (vouchChannel) {
+                const vouchEmbed = new EmbedBuilder()
+                    .setColor(0x00FF00) 
+                    .setTitle(`⭐ New Vouch! (#${newTotal})`) 
+                    .setDescription(`+ 1 vouch from ${buyer}`)
+                    .addFields(
+                        { name: 'Seller', value: `${seller}`, inline: true },
+                        { name: 'Total Vouches', value: `${newTotal}`, inline: true },
+                        { name: 'Game', value: `${game}`, inline: true },
+                        { name: 'Item/Service', value: `${itemOrService}`, inline: true }
+                    )
+                    .setFooter({ text: `Eclipse Zone Vouch ID: ${newTotal}` })
+                    .setTimestamp();
                 
-            const tradeEmbed = new EmbedBuilder()
-                .setColor(0x0099FF)
-                .setTitle(`🤝 Trade Proof (Vouch #${grandTotal})`) 
-                .setDescription(`Delivery confirmation for ${itemOrService}`)
-                .setImage(tradeProof.url)
-                .setFooter({ text: `Linked to Vouch ID: ${grandTotal}` })
-                .setTimestamp();
+                await vouchChannel.send({ embeds: [vouchEmbed] });
                 
-            await proofsChannel.send({ embeds: [receiptEmbed, tradeEmbed] });
-        }
+                vouchChannel.setName(`⭐・vouches：${newTotal}`).catch(() => {
+                    console.log("Channel name rate limit hit.");
+                });
+            }
 
-        // 4. Archive/Rename/Lock Channel
-        const newName = interaction.channel.name.replace('purchase-', 'closed-');
-        await interaction.channel.edit({
-            name: newName,
-            parent: '1521455074243510292',
-            permissionOverwrites: [{ id: interaction.guild.id, deny: [PermissionFlagsBits.ViewChannel] }]
-        });
+            // 4. Send Proofs to Logs
+            const proofsChannel = interaction.guild.channels.cache.get(PROOFS_CHANNEL_ID);
+            if (proofsChannel) {
+                const receiptEmbed = new EmbedBuilder()
+                    .setColor(0x00FF00)
+                    .setTitle(`💰 Payment Receipt (Vouch #${newTotal})`) 
+                    .setDescription(`**Seller:** ${seller}\n**Buyer:** ${buyer}\n**Item/Service:** ${itemOrService}\n**Game:** ${game}`)
+                    .setImage(paymentReceipt.url)
+                    .setFooter({ text: `Linked to Vouch ID: ${newTotal}` })
+                    .setTimestamp();
+                    
+                const tradeEmbed = new EmbedBuilder()
+                    .setColor(0x0099FF)
+                    .setTitle(`🤝 Trade Proof (Vouch #${newTotal})`) 
+                    .setDescription(`Delivery confirmation for ${itemOrService}`)
+                    .setImage(tradeProof.url)
+                    .setFooter({ text: `Linked to Vouch ID: ${newTotal}` })
+                    .setTimestamp();
+                    
+                await proofsChannel.send({ embeds: [receiptEmbed, tradeEmbed] });
+            }
 
-        // 5. Send Order Complete Log to Transcripts Channel
-        const transcriptsChannel = interaction.guild.channels.cache.get(TRANSCRIPTS_CHANNEL_ID);
-        if (transcriptsChannel) {
-            const completeEmbed = new EmbedBuilder()
-                .setColor(0x9B59B6)
-                .setTitle('✅ Order Complete')
-                .setDescription(`Ticket ${interaction.channel} has been successfully closed and archived.`)
-                .addFields(
-                    { name: 'Seller', value: `${seller}`, inline: true },
-                    { name: 'Buyer', value: `${buyer}`, inline: true },
-                    { name: 'Game', value: `${game}`, inline: true },
-                    { name: 'Item/Service', value: `${itemOrService}`, inline: true }
-                )
-                .setFooter({ text: `Generated Vouch ID: ${grandTotal}` })
-                .setTimestamp();
+            // 5. Archive/Rename/Lock Channel
+            const newName = interaction.channel.name.replace('purchase-', 'closed-');
+            await interaction.channel.edit({
+                name: newName,
+                parent: '1521455074243510292',
+                permissionOverwrites: [{ id: interaction.guild.id, deny: [PermissionFlagsBits.ViewChannel] }]
+            });
+
+            // 6. Send Order Complete Log
+            const transcriptsChannel = interaction.guild.channels.cache.get(TRANSCRIPTS_CHANNEL_ID);
+            if (transcriptsChannel) {
+                const completeEmbed = new EmbedBuilder()
+                    .setColor(0x9B59B6)
+                    .setTitle('✅ Order Complete')
+                    .setDescription(`Ticket ${interaction.channel} has been successfully closed and archived.`)
+                    .addFields(
+                        { name: 'Seller', value: `${seller}`, inline: true },
+                        { name: 'Buyer', value: `${buyer}`, inline: true },
+                        { name: 'Game', value: `${game}`, inline: true },
+                        { name: 'Item/Service', value: `${itemOrService}`, inline: true }
+                    )
+                    .setFooter({ text: `Generated Vouch ID: ${newTotal}` })
+                    .setTimestamp();
                 
-            await transcriptsChannel.send({ embeds: [completeEmbed] });
-        }
+                await transcriptsChannel.send({ embeds: [completeEmbed] });
+            }
 
-        await interaction.editReply(`✅ Order #${grandTotal} finalized! Vouch posted, proofs linked, transcript logged, and ticket archived!`);
+            await interaction.editReply(`✅ Order #${newTotal} finalized! Vouch posted, proofs linked, transcript logged, and ticket archived!`);
+        } catch (error) {
+            console.error("Firebase Transaction Error:", error);
+            await interaction.editReply({ content: "❌ Database error while finalizing the order." });
+        }
     },
 };

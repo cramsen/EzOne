@@ -1,7 +1,5 @@
 import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
-import fs from 'fs';
-
-const path = './vouches.json';
+import { db } from '../firebase.js';
 
 export default {
     data: new SlashCommandBuilder()
@@ -13,28 +11,32 @@ export default {
                 .setRequired(true)),
                 
     async execute(interaction) {
+        // Defer reply so the bot has time to fetch from the database
+        await interaction.deferReply();
+        
         const seller = interaction.options.getUser('seller');
 
-        // 1. Read the current vouches from the JSON file
-        let vouches = {};
-        if (fs.existsSync(path)) {
-            vouches = JSON.parse(fs.readFileSync(path, 'utf8'));
+        try {
+            // 1. Look up the seller's total in Firebase
+            const sellerRef = db.ref(`vouches/${seller.id}`);
+            const snapshot = await sellerRef.once('value');
+            const totalVouches = snapshot.val() || 0;
+
+            // 2. Build and send the stats embed
+            const statsEmbed = new EmbedBuilder()
+                .setColor(0x0099FF) 
+                .setTitle('📊 Seller Reputation')
+                .setThumbnail(seller.displayAvatarURL({ dynamic: true })) 
+                .addFields(
+                    { name: 'Seller', value: `${seller}`, inline: true },
+                    { name: 'Total Vouches', value: `${totalVouches}`, inline: true }
+                )
+                .setTimestamp();
+
+            await interaction.editReply({ embeds: [statsEmbed] });
+        } catch (error) {
+            console.error("Firebase Read Error:", error);
+            await interaction.editReply({ content: "❌ Error connecting to the database." });
         }
-
-        // 2. Look up the seller's total (if they aren't in the file, default to 0)
-        const totalVouches = vouches[seller.id] || 0;
-
-        // 3. Build and send the stats embed
-        const statsEmbed = new EmbedBuilder()
-            .setColor(0x0099FF) // Blue color for a neutral info check
-            .setTitle('📊 Seller Reputation')
-            .setThumbnail(seller.displayAvatarURL({ dynamic: true })) // Adds their profile picture
-            .addFields(
-                { name: 'Seller', value: `${seller}`, inline: true },
-                { name: 'Total Vouches', value: `${totalVouches}`, inline: true }
-            )
-            .setTimestamp();
-
-        await interaction.reply({ embeds: [statsEmbed] });
     },
 };

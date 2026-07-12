@@ -1,8 +1,7 @@
 import { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } from 'discord.js';
-import fs from 'fs';
+import { db } from '../firebase.js';
 
-const path = './vouches.json';
-const channelId = '1465598901384908953'; // Your vouch channel ID
+const channelId = '1465598901384908953'; 
 
 export default {
     data: new SlashCommandBuilder()
@@ -20,55 +19,45 @@ export default {
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
                 
     async execute(interaction) {
+        await interaction.deferReply();
+
         const seller = interaction.options.getUser('seller');
         const amount = interaction.options.getInteger('amount');
+        const sellerRef = db.ref(`vouches/${seller.id}`);
 
-        // 1. Read current vouches
-        let vouches = {};
-        if (fs.existsSync(path)) {
-            vouches = JSON.parse(fs.readFileSync(path, 'utf8'));
-        }
-
-        if (!vouches[seller.id] || vouches[seller.id] <= 0) {
-            return interaction.reply({ 
-                content: `⚠️ ${seller} doesn't have any vouches to remove!`, 
-                ephemeral: true 
+        try {
+            const sellerSnapshot = await sellerRef.transaction((currentValue) => {
+                if (!currentValue || currentValue <= 0) return 0;
+                const adjusted = currentValue - amount;
+                return adjusted < 0 ? 0 : adjusted;
             });
-        }
 
-        // 2. Subtract and save
-        vouches[seller.id] -= amount;
-        if (vouches[seller.id] < 0) {
-            vouches[seller.id] = 0;
-        }
-        fs.writeFileSync(path, JSON.stringify(vouches, null, 4));
+            const newTotal = sellerSnapshot.snapshot.val();
 
-        // 3. Send embed
-        const removeEmbed = new EmbedBuilder()
-            .setColor(0xFF0000) 
-            .setTitle('➖ Vouches Removed')
-            .setDescription(`Removed ${amount} vouch(es) from ${seller}.`)
-            .addFields(
-                { name: 'Seller', value: `${seller}`, inline: true },
-                { name: 'New Total Vouches', value: `${vouches[seller.id]}`, inline: true }
-            )
-            .setTimestamp();
+            const removeEmbed = new EmbedBuilder()
+                .setColor(0xFF0000) 
+                .setTitle('➖ Vouches Removed')
+                .setDescription(`Removed ${amount} vouch(es) from ${seller}.`)
+                .addFields(
+                    { name: 'Seller', value: `${seller}`, inline: true },
+                    { name: 'New Total Vouches', value: `${newTotal}`, inline: true }
+                )
+                .setTimestamp();
 
-        await interaction.reply({ embeds: [removeEmbed] });
+            await interaction.editReply({ embeds: [removeEmbed] });
 
-        // 4. Calculate Server Total and Update Channel Name
-        let grandTotal = 0;
-        for (const key in vouches) {
-            grandTotal += vouches[key];
-        }
-
-        const vouchChannel = interaction.client.channels.cache.get(channelId);
-        if (vouchChannel) {
-            try {
-                await vouchChannel.setName(`⭐・vouches：${grandTotal}`);
-            } catch (error) {
-                console.error("Rate limit hit: Could not update channel name this time.");
+            const vouchChannel = interaction.client.channels.cache.get(channelId);
+            if (vouchChannel) {
+                try {
+                    await vouchChannel.setName(`⭐・vouches：${newTotal}`);
+                } catch (error) {
+                    console.error("Rate limit hit: Could not update channel name this time.");
+                }
             }
+
+        } catch (error) {
+            console.error("Firebase Transaction Error:", error);
+            await interaction.editReply({ content: "❌ Database error while removing vouches." });
         }
     },
 };
