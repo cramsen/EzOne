@@ -1,4 +1,4 @@
-//import 'dotenv/config';
+import 'dotenv/config';
 import { Client, GatewayIntentBits, Collection, ChannelType, PermissionFlagsBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } from 'discord.js';
 import fs from 'node:fs';
 
