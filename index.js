@@ -1,6 +1,6 @@
 import 'dotenv/config';
-console.log("Is TOKEN loaded?", !!process.env.TOKEN);
-console.log("Is FIREBASE_SERVICE_ACCOUNT loaded?", !!process.env.FIREBASE_SERVICE_ACCOUNT);
+//console.log("Is TOKEN loaded?", !!process.env.TOKEN);
+//console.log("Is FIREBASE_SERVICE_ACCOUNT loaded?", !!process.env.FIREBASE_SERVICE_ACCOUNT);
 import { Client, GatewayIntentBits, Collection, ChannelType, PermissionFlagsBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } from 'discord.js';
 import fs from 'node:fs';
 
