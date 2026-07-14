@@ -1,18 +1,33 @@
 import { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits, MessageFlags, ModalBuilder, TextInputBuilder, TextInputStyle } from 'discord.js';
-import { db } from '../firebase.js'; // Added Firebase import
+import { db } from '../firebase.js';
 
-// Helper function to turn "10m", "2h", "1d" into actual milliseconds
+// Helper function to turn "1h 30m", "45s", "1.5h", or "90" into actual milliseconds
 function parseDuration(input) {
-    const match = input.trim().match(/^(\d+)\s*([mhd])?$/i);
-    if (!match) return null; 
+    const trimmed = input.trim();
     
-    const value = parseInt(match[1]);
-    const unit = match[2] ? match[2].toLowerCase() : 'm'; 
-    
-    if (unit === 'm') return value * 60000; 
-    if (unit === 'h') return value * 3600000; 
-    if (unit === 'd') return value * 86400000; 
-    return null;
+    // If they just type a raw number (e.g., "90"), default to minutes
+    if (/^\d+(\.\d+)?$/.test(trimmed)) {
+        return parseFloat(trimmed) * 60000;
+    }
+
+    // Match any numbers followed by s, m, h, or d
+    const regex = /(\d+(?:\.\d+)?)\s*([smhd])/gi;
+    let match;
+    let totalMs = 0;
+    let found = false;
+
+    while ((match = regex.exec(trimmed)) !== null) {
+        found = true;
+        const value = parseFloat(match[1]);
+        const unit = match[2].toLowerCase();
+
+        if (unit === 's') totalMs += value * 1000;
+        if (unit === 'm') totalMs += value * 60000;
+        if (unit === 'h') totalMs += value * 3600000;
+        if (unit === 'd') totalMs += value * 86400000;
+    }
+
+    return found ? totalMs : null;
 }
 
 export default {
@@ -30,21 +45,21 @@ export default {
 
         const prizeInput = new TextInputBuilder()
             .setCustomId('prize')
-            .setLabel('What is the prize?')
-            .setPlaceholder('e.g., All Seeing Eye')
+            .setLabel('Prize(s) - Use / for multiple winners')
+            .setPlaceholder('e.g., $5 USDT / 30% Discount')
             .setStyle(TextInputStyle.Short)
             .setRequired(true);
 
         const durationInput = new TextInputBuilder()
             .setCustomId('duration')
-            .setLabel('Duration (Use m, h, or d)')
-            .setPlaceholder('e.g., 30m, 2h, 1d')
+            .setLabel('Duration (Use s, m, h, or d)')
+            .setPlaceholder('e.g., 1h 30m, 90m, 45s')
             .setStyle(TextInputStyle.Short)
             .setRequired(true);
 
         const winnersInput = new TextInputBuilder()
             .setCustomId('winners')
-            .setLabel('Number of winners (Numbers only)')
+            .setLabel('Number of winners (Usually 1)')
             .setPlaceholder('e.g., 1')
             .setStyle(TextInputStyle.Short)
             .setRequired(true);
@@ -74,7 +89,7 @@ export default {
         const durationMs = parseDuration(rawDuration);
 
         if (!durationMs) {
-            return submitted.reply({ content: '❌ Invalid duration format! Please use numbers followed by m, h, or d (e.g., 10m, 2h).', flags: MessageFlags.Ephemeral });
+            return submitted.reply({ content: '❌ Invalid duration format! Please use numbers followed by s, m, h, or d (e.g., 45s, 10m, 1h 30m).', flags: MessageFlags.Ephemeral });
         }
         if (isNaN(winnersCount) || winnersCount < 1) {
             return submitted.reply({ content: '❌ Invalid winners count! Please enter a valid number.', flags: MessageFlags.Ephemeral });
