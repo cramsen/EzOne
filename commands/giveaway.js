@@ -1,4 +1,5 @@
 import { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits, MessageFlags, ModalBuilder, TextInputBuilder, TextInputStyle } from 'discord.js';
+import { db } from '../firebase.js'; // Added Firebase import
 
 // Helper function to turn "10m", "2h", "1d" into actual milliseconds
 function parseDuration(input) {
@@ -79,8 +80,8 @@ export default {
             return submitted.reply({ content: '❌ Invalid winners count! Please enter a valid number.', flags: MessageFlags.Ephemeral });
         }
 
-        const endTime = new Date(Date.now() + durationMs);
-        const endTimestamp = Math.floor(endTime.getTime() / 1000); 
+        const endTime = Date.now() + durationMs;
+        const endTimestamp = Math.floor(endTime / 1000); 
         
         // 5. START THE GIVEAWAY
         const embed = new EmbedBuilder()
@@ -96,51 +97,17 @@ export default {
 
         const row = new ActionRowBuilder().addComponents(enterButton);
 
-        // UPDATED: Using withResponse and extracting the message
         const response = await submitted.reply({ embeds: [embed], components: [row], withResponse: true });
         const message = response.resource.message;
 
-        const entrants = new Set();
-        const collector = message.createMessageComponentCollector({ 
-            filter: i => i.customId === 'enter_giveaway', 
-            time: durationMs 
-        });
-
-        // 6. LIVE UPDATING ON BUTTON CLICK
-        collector.on('collect', async i => {
-            if (entrants.has(i.user.id)) {
-                await i.reply({ content: 'You have already entered this giveaway! Good luck!', flags: MessageFlags.Ephemeral });
-            } else {
-                entrants.add(i.user.id);
-                await i.reply({ content: 'You have successfully entered the giveaway! 🎉', flags: MessageFlags.Ephemeral });
-
-                embed.setDescription(`**Prize:** ${prize}\n**Winners:** ${winnersCount}\n**Entries:** ${entrants.size}\n**Ends:** <t:${endTimestamp}:R> (<t:${endTimestamp}:f>)\n**Hosted By:** ${interaction.user}`);
-                await message.edit({ embeds: [embed] }).catch(console.error);
-            }
-        });
-
-        // 7. GIVEAWAY END LOGIC
-        collector.on('end', async () => {
-            enterButton.setDisabled(true).setLabel(`Ended (${entrants.size} entries)`);
-            const disabledRow = new ActionRowBuilder().addComponents(enterButton);
-            
-            if (entrants.size === 0) {
-                embed.setDescription(`**Prize:** ${prize}\n**Entries:** 0\n**Ended!** No one entered.\n**Hosted By:** ${interaction.user}`);
-                await message.edit({ embeds: [embed], components: [disabledRow] });
-                return submitted.channel.send('Nobody entered the giveaway! 😢');
-            }
-
-            const entrantsArray = Array.from(entrants);
-            const actualWinnersCount = Math.min(winnersCount, entrantsArray.length); 
-            const winners = entrantsArray.sort(() => 0.5 - Math.random()).slice(0, actualWinnersCount);
-            const winnerMentions = winners.map(id => `<@${id}>`).join(', ');
-
-            embed.setDescription(`**Prize:** ${prize}\n**Winners:** ${winnerMentions}\n**Entries:** ${entrants.size}\n**Ended!**\n**Hosted By:** ${interaction.user}`);
-            embed.setColor('#43B581'); 
-
-            await message.edit({ embeds: [embed], components: [disabledRow] });
-            
-            await submitted.channel.send(`🎉 Congratulations ${winnerMentions}! You won **${prize}**! Please DM your Giveaway host ${interaction.user} to claim your prize.`);
+        // 6. SAVE TO FIREBASE INSTANTLY
+        await db.ref(`giveaways/${message.id}`).set({
+            channelId: submitted.channelId,
+            hostId: interaction.user.id,
+            prize: prize,
+            winnersCount: winnersCount,
+            endTime: endTime,
+            entrants: {} // Empty object to hold Discord IDs
         });
     }
 };
