@@ -82,7 +82,11 @@ export default {
             }
 
             // 5. Archive/Rename/Lock Channel
-            const newName = interaction.channel.name.replace('purchase-', 'closed-');
+            // Extract the client name by removing the 'purchase-' prefix
+            const clientName = interaction.channel.name.replace('purchase-', '');
+            // Format the new name to match: vouch number-clientName-closed
+            const newName = `${newTotal}-${clientName}-closed`;
+
             await interaction.channel.edit({
                 name: newName,
                 parent: '1521455074243510292',
