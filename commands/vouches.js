@@ -24,7 +24,7 @@ export default {
 
             // 2. Build and send the stats embed
             const statsEmbed = new EmbedBuilder()
-                .setColor(0x0099FF) 
+                .setColor(0x7FFF00) // Wind Breathing Green
                 .setTitle('📊 Seller Reputation')
                 .setThumbnail(seller.displayAvatarURL({ dynamic: true })) 
                 .addFields(

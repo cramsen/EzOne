@@ -32,21 +32,21 @@ export default {
 
         if (chosenState === 'online') {
             newName = 'STATUS: 🟢 ONLINE';
-            replyMessage = 'Market status updated to **Online**! 🟢';
+            replyMessage = 'The Dojo Gates are now **Open**! ⛩️';
             setTimeout(() => {
             // Delete the reply and catch any errors (e.g., if the message was already deleted manually)
             interaction.deleteReply().catch(console.error);
         }, 5000); // 5000 milliseconds = 5 seconds
         } else if (chosenState === 'down') {
             newName = 'STATUS: 🔴 DOWN';
-            replyMessage = 'Market status updated to **Down**! 🔴';
+            replyMessage = 'The Dojo Gates are currently **Sealed**! ⛩️';
             setTimeout(() => {
             // Delete the reply and catch any errors (e.g., if the message was already deleted manually)
             interaction.deleteReply().catch(console.error);
         }, 5000); // 5000 milliseconds = 5 seconds
         } else if (chosenState === 'maintenance') {
             newName = 'STATUS: 🟡 MAINTENANCE';
-            replyMessage = 'Market status updated to **Maintenance**! 🟡';
+            replyMessage = 'The Dojo is undergoing **Maintenance**! ⛩️';
             setTimeout(() => {
             // Delete the reply and catch any errors (e.g., if the message was already deleted manually)
             interaction.deleteReply().catch(console.error);

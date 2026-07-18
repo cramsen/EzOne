@@ -100,15 +100,15 @@ export default {
         
         // 5. START THE GIVEAWAY
         const embed = new EmbedBuilder()
-            .setTitle('🎉 ECLIPSE ZONE GIVEAWAY 🎉')
-            .setDescription(`**Prize:** ${prize}\n**Winners:** ${winnersCount}\n**Entries:** 0\n**Ends:** <t:${endTimestamp}:R> (<t:${endTimestamp}:f>)\n**Hosted By:** ${interaction.user}`)
-            .setColor('#7500ff'); 
+            .setTitle('⛩️ DOJO TRIAL INITIATED ⛩️')
+            .setDescription(`**Spoils:** ${prize}\n**Victors:** ${winnersCount}\n**Challengers:** 0\n**Ends:** <t:${endTimestamp}:R> (<t:${endTimestamp}:f>)\n**Overseer:** ${interaction.user}`)
+            .setColor('#76BA99'); // Wind Breathing Pale Green
 
         const enterButton = new ButtonBuilder()
             .setCustomId('enter_giveaway')
-            .setLabel('Join Giveaway')
-            .setEmoji('🎉')
-            .setStyle(ButtonStyle.Primary);
+            .setLabel('Enter Trial')
+            .setEmoji('⚔️')
+            .setStyle(ButtonStyle.Success);
 
         const row = new ActionRowBuilder().addComponents(enterButton);
 

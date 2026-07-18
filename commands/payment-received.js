@@ -6,15 +6,13 @@ export default {
         .setDescription('Sends an embed confirming a customer payment.')
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
     async execute(interaction) {
-        // Build the embed message
         const paymentEmbed = new EmbedBuilder()
-            .setTitle('Payment Received! 💸')
-            .setDescription('Your payment has been successfully verified. Please stand by for further instructions regarding the delivery of your items.')
-            .setColor('#fffdd0') // A nice success/verification green
-            .setTimestamp() // Adds the exact time the payment was confirmed
-            .setFooter({ text: 'Eclipse Zone Marketplace' }); // Optional footer
+            .setTitle('Tribute Verified 💸')
+            .setDescription('Your tribute has been successfully verified by the Overseers. Please stand by for further instructions regarding the delivery of your assets.')
+            .setColor('#EAEAEA') // Pale silver/white
+            .setTimestamp() 
+            .setFooter({ text: 'Sorai' }); 
 
-        // Reply to the slash command with the embed
         await interaction.reply({ embeds: [paymentEmbed] });
     },
 };

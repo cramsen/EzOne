@@ -64,28 +64,34 @@ export default {
             } 
             
             // --- OPENING A TICKET ---
-            else if (interaction.customId === 'create_ticket') {
-                const ticketChannel = await interaction.guild.channels.create({
-                    name: `purchase-${interaction.user.username}`,
-                    type: ChannelType.GuildText,
-                    parent: '1465599024752099481', 
-                    permissionOverwrites: [
-                        { id: interaction.guild.id, deny: [PermissionFlagsBits.ViewChannel] },
-                        { id: interaction.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] },
-                    ],
-                });
+else if (interaction.customId === 'create_ticket') {
+    // Generates a channel mimicking a dojo request line
+    const ticketChannel = await interaction.guild.channels.create({
+        name: `dojo-request-${interaction.user.username}`,
+        type: ChannelType.GuildText,
+        parent: '1465599024752099481', // Make sure your category ID matches your new setup!
+        permissionOverwrites: [
+            { id: interaction.guild.id, deny: [PermissionFlagsBits.ViewChannel] },
+            { id: interaction.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] },
+        ],
+    });
 
-                const ticketEmbed = new EmbedBuilder()
-                    .setTitle('Purchase Ticket Opened 💸')
-                    .setDescription('Welcome! Please let us know what you would like to buy and your preferred payment method. A staff member will be right with you.\n\n*A staff member will use the /complete-order command to finalize this ticket when finished.*')
-                    .setColor('#7500ff'); 
+    const ticketEmbed = new EmbedBuilder()
+        .setTitle('⛩️ Dojo Request Opened')
+        .setDescription('State your business within the Shinazugawa Dojo. If you are here to acquire assets, secure boosting services, or trade items, outline your request clearly along with your target payment method.\n\n*A Dojo Overseer will arrive shortly. Do not waste the Wind Hashira\'s time.*')
+        .setColor('#BC1A22') // Sanemi Scar Red
 
-                const closeButton = new ButtonBuilder().setCustomId('close_ticket').setLabel('Close').setStyle(ButtonStyle.Danger);
-                const actionRow = new ActionRowBuilder().addComponents(closeButton);
-                
-                await ticketChannel.send({ content: `<@${interaction.user.id}> <@&1465599379997200539>`, embeds: [ticketEmbed], components: [actionRow] });
-                await interaction.reply({ content: `Your purchase ticket has been created: ${ticketChannel}`, flags: MessageFlags.Ephemeral });
-            } 
+    const closeButton = new ButtonBuilder()
+        .setCustomId('close_ticket')
+        .setLabel('Dismiss Request')
+        .setStyle(ButtonStyle.Danger);
+        
+    const actionRow = new ActionRowBuilder().addComponents(closeButton);
+    
+    // Kept your internal Role ID pings exactly the same so your staff notifications don't break!
+    await ticketChannel.send({ content: `<@${interaction.user.id}> <@&1465599379997200539>`, embeds: [ticketEmbed], components: [actionRow] });
+    await interaction.reply({ content: `Your dojo petition has been raised here: ${ticketChannel}`, flags: MessageFlags.Ephemeral });
+}
             
             // --- CLOSING A TICKET ---
             else if (interaction.customId === 'close_ticket') {

@@ -61,7 +61,7 @@ export default {
 
             // 3. Re-generate the brand new embed using the clean database count
             const correctedEmbed = new EmbedBuilder()
-                .setColor(0x00FF00) 
+                .setColor(0x7FFF00) 
                 .setTitle(`⭐ New Vouch! (#${currentTotal})`) 
                 .setDescription(`+ 1 vouch from ${buyer}`)
                 .addFields(
@@ -70,7 +70,7 @@ export default {
                     { name: 'Game', value: `${game}`, inline: true },
                     { name: 'Item/Service', value: `${itemOrService}`, inline: true }
                 )
-                .setFooter({ text: `Eclipse Zone Vouch ID: ${currentTotal}` })
+                .setFooter({ text: `Dojo Archive ID: ${currentTotal}` })
                 .setTimestamp();
 
             // 4. Send the corrected embed cleanly back into the same channel

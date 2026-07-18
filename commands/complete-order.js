@@ -40,7 +40,7 @@ export default {
             const vouchChannel = interaction.guild.channels.cache.get(VOUCH_CHANNEL_ID);
             if (vouchChannel) {
                 const vouchEmbed = new EmbedBuilder()
-                    .setColor(0x00FF00) 
+                    .setColor(0x7FFF00) 
                     .setTitle(`⭐ New Vouch! (#${newTotal})`) 
                     .setDescription(`+ 1 vouch from ${buyer}`)
                     .addFields(
@@ -63,7 +63,7 @@ export default {
             const proofsChannel = interaction.guild.channels.cache.get(PROOFS_CHANNEL_ID);
             if (proofsChannel) {
                 const receiptEmbed = new EmbedBuilder()
-                    .setColor(0x00FF00)
+                    .setColor(0x7FFF00)
                     .setTitle(`💰 Payment Receipt (Vouch #${newTotal})`) 
                     .setDescription(`**Seller:** ${seller}\n**Buyer:** ${buyer}\n**Item/Service:** ${itemOrService}\n**Game:** ${game}`)
                     .setImage(paymentReceipt.url)
@@ -71,7 +71,7 @@ export default {
                     .setTimestamp();
                     
                 const tradeEmbed = new EmbedBuilder()
-                    .setColor(0x0099FF)
+                    .setColor(0x7FFF00)
                     .setTitle(`🤝 Trade Proof (Vouch #${newTotal})`) 
                     .setDescription(`Delivery confirmation for ${itemOrService}`)
                     .setImage(tradeProof.url)
@@ -97,7 +97,7 @@ export default {
             const transcriptsChannel = interaction.guild.channels.cache.get(TRANSCRIPTS_CHANNEL_ID);
             if (transcriptsChannel) {
                 const completeEmbed = new EmbedBuilder()
-                    .setColor(0x9B59B6)
+                    .setColor(0x7FFF00)
                     .setTitle('✅ Order Complete')
                     .setDescription(`Ticket ${interaction.channel} has been successfully closed and archived.`)
                     .addFields(

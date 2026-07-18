@@ -37,7 +37,7 @@ export default {
 
                         if (entrants.length === 0) {
                             resultText = `**Prize(s):** ${data.prize}\n**Entries:** 0\n**Ended!** No one entered.\n**Hosted By:** <@${data.hostId}>`;
-                            annoucementText = `Nobody entered the giveaway for **${data.prize}**! 😢`;
+                            annoucementText = `The trials are empty. No disciples stepped forward to claim **${data.prize}**! 🍃`;
                         } else {
                             resultText = `**Entries:** ${entrants.length}\n**Ended!**\n\n🏆 **Winners:**\n`;
                             annoucementText = `🎉 **Giveaway Results for ${data.prize}:**\n`;
@@ -58,7 +58,7 @@ export default {
                                 const winnerId = entrants.shift();
                                 
                                 resultText += `• **${currentPrize}:** <@${winnerId}>\n`;
-                                annoucementText += `• Congratulations <@${winnerId}>! You won **${currentPrize}**! Please DM <@${data.hostId}> to claim.\n`;
+                                annoucementText += `🏆 **Trial Victor:** Congratulations <@${winnerId}>! You have proven worthy of **${currentPrize}**. report to <@${data.hostId}> immediately to claim your spoils.\n`;
                             }
                         }
 

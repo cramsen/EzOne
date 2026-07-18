@@ -38,7 +38,7 @@ export default {
 
             // 3. Build the embed
             const vouchEmbed = new EmbedBuilder()
-                .setColor(0x00FF00) 
+                .setColor(0x7FFF00) // Wind Breathing Green
                 .setTitle(`⭐ New Vouch! (#${newTotal})`) 
                 .setDescription(`+ 1 vouch from ${buyer}`)
                 .addFields(
@@ -47,7 +47,7 @@ export default {
                     { name: 'Game', value: `${game}`, inline: true },
                     { name: 'Item/Service', value: `${itemOrService}`, inline: true }
                 )
-                .setFooter({ text: `Eclipse Zone Vouch ID: ${newTotal}` })
+                .setFooter({ text: `Dojo Archive ID: ${newTotal}` })
                 .setTimestamp();
 
             // 4. Send the embed

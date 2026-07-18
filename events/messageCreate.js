@@ -15,7 +15,7 @@ export default {
 
         // 3. Check if the bot that sent it is exactly named "OneBump"
         if (message.author.username === 'OneBump') {
-            console.log(`Caught OneBump in #${message.channel.name}. Starting 10-second deletion timer...`);
+            console.log(`[SORAI] Intruders spotted in the dojo. Purging unwanted scroll in 10 seconds... 🧹`);
 
             // 4. Wait 10 seconds, then delete it
             setTimeout(() => {
